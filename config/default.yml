@@ -1,0 +1,52 @@
+# default config for exoskeleton display demo
+
+# exoskeleton input parameters
+port: /dev/tty.usbserial-DN05JL6C
+use_exo: False # set to False for non-exo debugging
+use_filter: True # enable or disable filtering
+num_hands: 1
+hand_spacing: 0
+fingers_per_hand: 5
+valid_angle_min: -10 # degrees; angles below are ignored
+valid_angle_max: 100 # degrees; angles above are ignored
+
+# key display parameters
+key_width: 0.1 # in units of screen height
+key_height: 0.04 # in units of screen height
+key_line_width: 2.5 # in points
+key_base_expand: 0.01 # in units of screen height
+key_corner_rad: 0.03 # in units of screen height
+key_corner_pts: 5 # smoothing points in corner 
+key_base_height: 0.025 # in units of screen height
+key_spacing: 0.225 # in units of screen height
+key_ypos_min: 0.045 # in units of screen height from center
+key_ypos_max: 0.01 # in units of screen height from center
+key_base_ypos: 0 # in units of screen height from center
+display_angle_min: 0 # minimum angle to display
+display_angle_max: 60 # maximum angle to display
+
+# colors [r,g,b]; 1 = white, -1 = black
+bg_color: [-0.8,-0.8,-0.8]
+key_line_color: [0.1,0.1,0.1]
+key_color: [-0.5,-0.5,-0.5]
+shadow_adjust_color: [-0.1,-0.1,-0.1]
+line_adjust_color: [0.6,0.6,0.6]
+success_color: [-0.8,-0.2,-0.8]
+slow_color: [-0.1,-0.1,-0.9]
+fail_color: [0.3,-0.5,-0.5]
+cue_color: [0.6,0.6,0.6]
+
+# timing
+cue_time: 2 # seconds
+feedback_time: 1 # seconds
+iti_time: 1 # seconds
+seq_per_trial: 3 # sequences to execute
+
+# screen dimensions
+screen_width: 1280 # pixels
+screen_height: 720 # pixels
+
+# one euro filter parameters
+filter_fc_min: 0.5 # Hz, minimum cutoff frequency
+filter_beta: 0.25 # arbitrary units, speed coefficient
+filter_d_cutoff: 1.0 # 0.05 # Hz, derivative cutoff frequency
