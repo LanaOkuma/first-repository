@@ -4,9 +4,8 @@
 port: /dev/tty.usbserial-DN05JL6C
 use_exo: False # set to False for non-exo debugging
 use_filter: True # enable or disable filtering
-num_hands: 1
-hand_spacing: 0
-fingers_per_hand: 5
+num_fingers: 10
+num_active_fingers: 5
 valid_angle_min: -10 # degrees; angles below are ignored
 valid_angle_max: 100 # degrees; angles above are ignored
 
@@ -37,10 +36,22 @@ fail_color: [0.3,-0.5,-0.5]
 cue_color: [0.6,0.6,0.6]
 
 # timing
+start_wait_time: 0.3 # seconds
 cue_time: 2 # seconds
 feedback_time: 1 # seconds
 iti_time: 1 # seconds
 seq_per_trial: 3 # sequences to execute
+num_runs: 2 # 8 # per session
+trials_per_run: 2 # 20 # count
+
+# sequences
+sequences:
+  a: 
+    hand: 'left'
+    seq: [0,1,2,3,4] # [4,2,3,1,0]
+  b:
+    hand: 'right'
+    seq: [4,3,2,1,0] # [1,3,2,4,0]
 
 # screen dimensions
 screen_width: 1280 # pixels
@@ -49,4 +60,4 @@ screen_height: 720 # pixels
 # one euro filter parameters
 filter_fc_min: 0.5 # Hz, minimum cutoff frequency
 filter_beta: 0.25 # arbitrary units, speed coefficient
-filter_d_cutoff: 1.0 # 0.05 # Hz, derivative cutoff frequency
+filter_d_cutoff: 1.0 # Hz, derivative cutoff frequency

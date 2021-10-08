@@ -107,47 +107,40 @@ class CueDisplay:
                               'fail':'+0'}
 
         # logic
-        self.left_hand_active = False
-        self.right_hand_active = False
+        self.active_hand = 'left' # 'left' or 'right'
 
         # reset to start
         self.set_all_idle()
 
     def draw(self):
-        if self.left_hand_active:
+        if self.active_hand == 'left':
             self.left_hand_light.draw()
-        else:
+            self.right_hand_dark.draw()
+        elif self.active_hand == 'right':
             self.left_hand_dark.draw()
-        if self.right_hand_active:
             self.right_hand_light.draw()
         else:
+            self.left_hand_dark.draw()
             self.right_hand_dark.draw()
         self.cue_outline.draw()
         self.cue_msg.draw()
 
+    def set_for_start(self, hand='left'):
+        self.cue_outline.lineColor = self.idle_color
+        self.cue_msg.text = 'Press All'
+        self.cue_msg.color = self.cue_color
+        self.active_hand = hand
+
     def set_all_idle(self):
         self.cue_outline.lineColor = self.idle_color
         self.cue_msg.text = ''
-        self.left_hand_active = False
-        self.right_hand_active = False
 
-    def set_cue(self, seq='5 2 3 1 4', hand='left'):
+    def set_cue(self, seq='5 2 3 1 4'):
         self.cue_outline.lineColor = self.cue_color
         self.cue_msg.color = self.cue_color
         self.cue_msg.text = seq
-        if hand == 'left':
-            self.left_hand_active = True
-            self.right_hand_active = False
-        elif hand == 'right':
-            self.left_hand_active = False
-            self.right_hand_active = True
-        else:
-            self.left_hand_active = False
-            self.right_hand_active = False
 
     def set_feedback(self, feedback):
-        self.left_hand_active = False
-        self.right_hand_active = False
         self.cue_msg.text = self.feedback_msgs[feedback]
         if feedback == 'fast' or feedback == 'success':
             self.cue_msg.color = self.success_color
@@ -173,9 +166,8 @@ class ExoDisplay:
             self.exo_active = False
 
         # load hand/finger params
-        self.num_hands = self.config['num_hands']
-        self.fingers_per_hand = self.config['fingers_per_hand']
-        self.num_fingers = self.num_hands * self.fingers_per_hand 
+        self.num_fingers = self.config['num_fingers']
+        self.num_active_fingers = self.config['num_active_fingers']
 
         # load display params
         self.key_width = self.config['key_width']
@@ -186,7 +178,6 @@ class ExoDisplay:
         self.key_corner_pts = self.config['key_corner_pts']
         self.key_base_height = self.config['key_base_height']
         self.key_spacing = self.config['key_spacing']
-        self.hand_spacing = self.config['hand_spacing']
         self.ypos_min = self.config['key_ypos_min']
         self.ypos_max = self.config['key_ypos_max']
         self.base_ypos = self.config['key_base_ypos']
@@ -204,11 +195,8 @@ class ExoDisplay:
         self.slow_color = self.config['slow_color']
         self.fail_color = self.config['fail_color']
         self.cue_color = self.config['cue_color']
-        self.xpos = np.arange(self.num_fingers)-(self.num_fingers-1)/2
+        self.xpos = np.arange(self.num_active_fingers)-(self.num_active_fingers-1)/2
         self.xpos = self.key_spacing*self.xpos
-        if self.num_hands == 2:
-            self.xpos = ((self.xpos-self.hand_spacing/2)*(self.xpos<0)
-                        +(self.xpos+self.hand_spacing/2)*(self.xpos>0))
         self.key_stims = [KeyDisplay(
             key_width=self.key_width, key_height=self.key_height,
             base_expand=self.key_base_expand, base_height=self.key_base_height,
@@ -218,7 +206,7 @@ class ExoDisplay:
             line_color=self.key_line_color,
             line_adjust_color=self.line_adjust_color,
             xpos=self.xpos[finger], ypos=self.base_ypos, win=win)
-                for finger in range(self.num_fingers)]
+                for finger in range(self.num_active_fingers)]
         self.cue_display = CueDisplay(win,
             bg_color=self.config['bg_color'],cue_color=self.cue_color,
             idle_color=self.key_color, success_color=self.success_color,
@@ -249,6 +237,8 @@ class ExoDisplay:
         new_time = self.exo_clock.getTime()
         self.time_passed = new_time-self.last_time
         self.last_time = new_time
+
+        # update inputs (all fingers)
         for finger in range(self.num_fingers):
             if self.exo_active:
                 input_raw = exo.position[finger]
@@ -257,10 +247,6 @@ class ExoDisplay:
                     input_raw = 1.1*self.display_angle_max
                 else:
                     input_raw = self.display_angle_min
-                # # sinusoid+noise for tuning/debugging without exo
-                # input_raw = (0.5*(self.display_angle_max-self.display_angle_min)
-                #     +0.5*(self.display_angle_max-self.display_angle_min)
-                #     *np.sin(3*self.exo_clock.getTime()+finger*0.6)+np.random.uniform(-2,2))
 
             if (input_raw >= self.valid_angle_min) and (input_raw <= self.valid_angle_max):
                 self.angle_raw[finger] = input_raw
@@ -273,23 +259,29 @@ class ExoDisplay:
             else:
                 self.angle_filt[finger] = self.angle_raw[finger]
 
-            # update stims
+        # update stims
+        for finger in range(self.num_active_fingers):
+            if self.cue_display.active_hand == 'left':
+                physical_finger = finger
+            elif self.cue_display.active_hand == 'right':
+                physical_finger = finger+self.num_active_fingers
             self.key_stims[finger].setPos(
                 self.ypos_min+(self.ypos_max-self.ypos_min)
                 *np.clip(self.display_angle_min,
-                         self.angle_filt[finger],
+                         self.angle_filt[physical_finger],
                          self.display_angle_max)
                  /(self.display_angle_max-self.display_angle_min))
 
-            if self.angle_filt[finger] >= self.display_angle_max:
+            if self.angle_filt[physical_finger] >= self.display_angle_max:
                 if not(self.keydowns[finger]):
                     self.new_keydowns[finger] = True
                 self.keydowns[finger] = True
-            elif self.angle_filt[finger] < self.display_angle_max:
+            elif self.angle_filt[physical_finger] < self.display_angle_max:
                 self.keydowns[finger] = False
 
     def draw(self):
         for stim in self.key_stims: stim.draw()
+        self.cue_display.draw()
 
 # ----------------------------------------------------------------------------
 

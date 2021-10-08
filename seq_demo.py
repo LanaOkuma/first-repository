@@ -9,11 +9,6 @@ class SequenceGame:
         # load config
         self.config = yaml.load(open('config/'+config+'.yml'),Loader=yaml.FullLoader)
 
-        # load hand/finger params
-        self.num_hands = self.config['num_hands']
-        self.fingers_per_hand = self.config['fingers_per_hand']
-        self.num_fingers = self.num_hands * self.fingers_per_hand 
-
         # set display 
         self.win = visual.Window(size=(self.config['screen_width'], self.config['screen_height']),
                                  color=self.config['bg_color'], units='height')
@@ -28,61 +23,77 @@ class SequenceGame:
             from psychopy.iohub.client import launchHubServer
             self.io = launchHubServer()
             self.kb = self.io.devices.keyboard
-            self.key_codes = ['a','w','e','r','b']
+            self.key_codes = ['q','w','e','r','v','n','u','i','o','p']
 
-        # sequence learning constants 
-        self.DEMO_SEQUENCE = np.array([4,2,3,1,0])
-        self.DEMO_SEQUENCE_2 = np.array([1,3,2,4,0])
-        self.START_WAIT_TIME = 0.3 # seconds
-
-        # XXX FIGURE OUT TIMINGS/TRIAL DESIGN
-        self.CUE_TIME = 1.0 # seconds
-        self.END_WAIT_TIME = 0.5 # seconds
-        self.start_msg_text = 'Press All Keys To Begin'
-        self.start_msg = visual.TextStim(win=self.win,
-            text=self.start_msg_text, pos=(0,0.25),
+        self.run_msg_text = 'Run {} of {}'
+        self.exp_end_text = 'All done!'
+        self.run_msg = visual.TextStim(win=self.win,
+            text='', pos=(0,-0.2),
             color=self.exo_display.cue_color,
-            height=0.05)
+            height=0.08)
 
         # sequence learning variables
         self.trial_clock = core.Clock()
         self.start_clock = core.Clock()
-        self.reset_for_start()
-        self.sequence = self.DEMO_SEQUENCE
         self.hand = 'left'
-        self.best_times = np.full(len(self.sequence), 1.0)
         self.trial_stage = 'cue' # ['cue', 'press', 'feedback']
         self.seq_in_trial = 0
+        self.START_WAIT_TIME = self.config['start_wait_time']
         self.SEQ_PER_TRIAL = self.config['seq_per_trial']
         self.CUE_TIME = self.config['cue_time']
         self.FEEDBACK_TIME = self.config['feedback_time']
         self.ITI_TIME = self.config['iti_time']
+        self.NUM_RUNS = self.config['num_runs']
+        self.TRIALS_PER_RUN = self.config['trials_per_run']
+        self.SEQUENCES = self.config['sequences']
+        self.trial_num = 0
+        self.run_num = 0
+        self.trial_base_order = ['a','b']
+        self.trial_order = np.tile(self.trial_base_order,
+            int(self.TRIALS_PER_RUN/len(self.trial_base_order)))
+        self.set_sequence()
+        self.reset_for_start()
 
-    def reset_for_start(self):
+    def set_sequence(self):
+        next_seq = self.SEQUENCES[self.trial_order[self.trial_num]]
+        self.exo_display.cue_display.active_hand = next_seq['hand']
+        self.sequence = np.array(next_seq['seq'])
+
+    def reset_for_start(self, hand='left'):
         self.exp_stage = 'wait'
+        if self.run_num < self.NUM_RUNS:
+            self.run_msg.text = self.run_msg_text.format(self.run_num+1,self.NUM_RUNS)
+        else:
+            self.run_msg.text = self.exp_end_text
+        self.exo_display.cue_display.set_for_start(hand)
         for key in self.exo_display.key_stims:
             key.setBaseColor(self.exo_display.cue_color)
         self.start_keys_pressed = np.full(self.exo_display.num_fingers, False)
         self.start_initiated = False
 
     def wait_for_start(self):
-        self.start_msg.draw()
+        self.run_msg.draw()
         for pressed_key in np.where(self.exo_display.keydowns==True)[0]:
             self.start_keys_pressed[pressed_key] = True
             self.exo_display.key_stims[pressed_key].setBaseColor(self.exo_display.success_color)
 
-        if all(self.start_keys_pressed) and not(self.start_initiated):
+        if ((sum(self.start_keys_pressed)>=self.exo_display.num_active_fingers)
+                and not(self.start_initiated)):
             self.start_initiated = True
             self.start_clock.reset()
 
         if self.start_initiated and self.start_clock.getTime()>self.START_WAIT_TIME:
-            self.reset_for_exp()
+            if self.run_num < self.NUM_RUNS:
+                self.reset_for_exp()
+            else:
+                self.quit()
 
     def reset_for_exp(self):
         self.exp_stage = 'run'
         self.reset_for_trial()
 
     def reset_for_trial(self):
+        self.set_sequence()
         self.seq_in_trial = 0
         self.trial_stage = 'cue'
         self.trial_clock.reset()
@@ -102,7 +113,7 @@ class SequenceGame:
         self.exo_display.cue_display.draw()
         if self.trial_stage == 'cue':
             self.exo_display.cue_display.set_cue(
-                seq=str(self.sequence+1)[1:-1], hand=self.hand)
+                seq=str(self.sequence+1)[1:-1])
             if self.trial_clock.getTime() > self.CUE_TIME:
                 self.trial_stage = 'press'
                 self.exo_display.cue_display.set_all_idle()
@@ -140,15 +151,13 @@ class SequenceGame:
                     self.reset_for_seq()
         elif self.trial_stage == 'iti':
             if self.trial_clock.getTime() > self.ITI_TIME:
-                if all(self.sequence == self.DEMO_SEQUENCE):
-                    self.sequence = self.DEMO_SEQUENCE_2
+                self.trial_num += 1
+                if self.trial_num >= self.TRIALS_PER_RUN:
+                    self.trial_num = 0
+                    self.run_num += 1
+                    self.reset_for_start()
                 else:
-                    self.sequence = self.DEMO_SEQUENCE
-                if self.hand == 'left':
-                    self.hand = 'right'
-                else:
-                    self.hand = 'left'
-                self.reset_for_trial()
+                    self.reset_for_trial()
 
     def check_keys(self):
         events = self.kb.getKeys()
