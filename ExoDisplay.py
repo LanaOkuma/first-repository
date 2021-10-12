@@ -151,10 +151,10 @@ class CueDisplay:
 
 class ExoDisplay:
 
-    def __init__(self, win, config='default'):
+    def __init__(self, win, config):
 
         # load config
-        self.config = yaml.load(open('config/'+config+'.yml'),Loader=yaml.FullLoader)
+        self.config = config
 
         # load and start exo recording
         if self.config['use_exo']:
