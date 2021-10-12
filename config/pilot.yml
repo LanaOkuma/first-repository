@@ -22,7 +22,7 @@ key_ypos_min: 0.045 # in units of screen height from center
 key_ypos_max: 0.01 # in units of screen height from center
 key_base_ypos: 0 # in units of screen height from center
 display_angle_min: 0 # minimum angle to display
-display_angle_max: 60 # maximum angle to display
+display_angle_max: 30 # maximum angle to display
 
 # colors [r,g,b]; 1 = white, -1 = black
 bg_color: [-0.8,-0.8,-0.8]
