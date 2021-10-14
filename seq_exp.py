@@ -63,7 +63,7 @@ class SequenceGame:
         # sequence learning variables
         self.trial_clock = core.Clock()
         self.start_clock = core.Clock()
-        self.hand = 'left'
+        self.start_hand = self.config['start_hand']
         self.trial_stage = 'cue' # ['cue', 'press', 'feedback']
         self.seq_in_trial = 0
         self.START_WAIT_TIME = self.config['start_wait_time']
@@ -77,7 +77,7 @@ class SequenceGame:
         self.trial_num = 0
         self.run_num = 0
         self.score = 0
-        self.trial_base_order = ['a','b']
+        self.trial_base_order = self.config['sequence_order']
         self.trial_order = np.tile(self.trial_base_order,
             int(self.TRIALS_PER_RUN/len(self.trial_base_order)))
         self.seq_times = {}
@@ -94,7 +94,7 @@ class SequenceGame:
         self.exo_display.cue_display.active_hand = self.next_seq['hand']
         self.sequence = np.array(self.next_seq['seq'])
 
-    def reset_for_start(self, hand='left'):
+    def reset_for_start(self):
         self.exp_stage = 'wait'
         if self.run_num > 0:
             self.score_msg.text = self.score_msg_text.format(self.score)
@@ -102,7 +102,7 @@ class SequenceGame:
             self.run_msg.text = self.run_msg_text.format(self.run_num+1,self.NUM_RUNS)
         else:
             self.run_msg.text = self.exp_end_text
-        self.exo_display.cue_display.set_for_start(hand)
+        self.exo_display.cue_display.set_for_start(self.start_hand)
         for key in self.exo_display.key_stims:
             key.setBaseColor(self.exo_display.cue_color)
         self.start_keys_pressed = np.full(self.exo_display.num_fingers, False)
