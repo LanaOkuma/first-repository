@@ -267,9 +267,10 @@ class ExoDisplay:
                 physical_finger = finger+self.num_active_fingers
             self.key_stims[finger].setPos(
                 self.ypos_min+(self.ypos_max-self.ypos_min)
-                *np.clip(self.display_angle_min,
+                *(np.clip(self.display_angle_min,
                          self.angle_filt[physical_finger],
                          self.display_angle_max)
+                 - self.display_angle_min)
                  /(self.display_angle_max-self.display_angle_min))
 
             if self.angle_filt[physical_finger] >= self.display_angle_max:
