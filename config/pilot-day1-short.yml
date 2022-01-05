@@ -41,8 +41,8 @@ cue_time: 2 # seconds
 feedback_time: 1 # seconds
 iti_time: 1 # seconds
 seq_per_trial: 3 # sequences to execute
-num_runs: 3 # per session
-trials_per_run: 5 # count
+num_runs: 4 # per session
+trials_per_run: 10 # count
 
 # sequences
 start_hand: 'left' # to initiate each run
